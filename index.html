@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emergency Ambulance Dispatch Simulator</title>
+<style>
+
+:root {
+    --bg: #f3f6fc;
+    --panel: #ffffff;
+    --panel-2: #f7f9ff;
+    --border: #e0e7f2;
+    --text: #17233d;
+    --muted: #687891;
+    --blue: #4263eb;
+    --cyan: #08a6a6;
+    --green: #0d9b72;
+    --amber: #c47a08;
+    --red: #d9435b;
+    --shadow: 0 12px 32px rgba(35, 55, 90, .08);
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    background:
+      radial-gradient(circle at 5% 0%, rgba(111, 139, 255, .13), transparent 28%),
+      radial-gradient(circle at 95% 8%, rgba(28, 190, 174, .10), transparent 24%),
+      var(--bg);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.app { max-width: 1500px; margin: 0 auto; padding: 26px; }
+.topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 18px; margin-bottom: 24px;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-mark {
+    width: 52px; height: 52px; border-radius: 17px;
+    display: grid; place-items: center; color: white;
+    background: linear-gradient(145deg, #526df5, #7957df 58%, #18aaa5);
+    box-shadow: 0 9px 22px rgba(83, 99, 225, .25);
+    font-size: 25px;
+}
+h1 { margin: 0; font-size: clamp(21px, 3vw, 29px); letter-spacing: -.7px; color: #182644; }
+.subtitle { margin-top: 5px; color: var(--muted); font-size: 13px; }
+.top-actions { display: flex; align-items: center; gap: 10px; }
+.live-pill {
+    display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px;
+    color: #087d60; background: #e7f8f1;
+    border: 1px solid #c9eee0; border-radius: 999px; font-size: 12px; font-weight: 750;
+}
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #12b981; box-shadow: 0 0 0 4px rgba(18,185,129,.12); }
+.btn {
+    border: 1px solid var(--border); border-radius: 11px; padding: 10px 14px;
+    color: #253552; background: #f5f7fc; font-weight: 700; transition: .18s ease;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 7px 16px rgba(40,60,100,.12); }
+.btn-primary { color: white; background: linear-gradient(135deg, #526df5, #7657df); border-color: #5c6ee9; }
+.btn-success { color: white; background: linear-gradient(135deg, #0ca985, #078e9b); border-color: #0a9d91; }
+.btn-danger { color: #c8324b; border-color: #f2cbd2; background: #fff1f3; }
+.btn-small { padding: 7px 10px; font-size: 12px; }
+.stats {
+    display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 14px; margin-bottom: 18px;
+}
+.stat, .panel {
+    background: rgba(255,255,255,.94);
+    border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow);
+}
+.stat { padding: 18px 19px; min-height: 116px; position: relative; overflow: hidden; }
+.stat::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, #6477f5, #18b7a6);
+}
+.stat-top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12px; font-weight: 650; }
+.stat-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #eef2ff; color: #5368df; font-size: 15px; }
+.stat-value { margin-top: 12px; font-size: 30px; font-weight: 800; letter-spacing: -.8px; color: #182644; }
+.stat-note { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.layout { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(330px,.9fr); gap: 18px; align-items: start; }
+.left-stack, .right-stack { display: grid; gap: 18px; min-width: 0; }
+.panel { padding: 20px; min-width: 0; }
+.panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.panel-title { margin: 0; font-size: 16px; font-weight: 800; color: #1c2b49; }
+.panel-description { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 11px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.map-wrap {
+    position: relative; overflow: hidden; border: 1px solid #263c61; border-radius: 14px;
+    background:
+        linear-gradient(rgba(127,158,210,.075) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(127,158,210,.075) 1px, transparent 1px),
+        #101d34;
+    background-size: 28px 28px; min-height: 390px;
+    box-shadow: inset 0 0 35px rgba(20,45,85,.25);
+}
+#cityMap { display: block; width: 100%; height: auto; min-height: 390px; }
+.road { stroke: #607796; stroke-width: 5; stroke-linecap: round; opacity: .9; }
+.road.secondary { stroke: #354c6b; stroke-width: 2; }
+.road.route { stroke: #23e0cf; stroke-width: 7; filter: drop-shadow(0 0 6px rgba(35,224,207,.75)); }
+.road-label { fill: #b6c9e6; font-size: 9px; text-anchor: middle; }
+.node { fill: #1b3152; stroke: #9bb9e3; stroke-width: 2; }
+.node-label { fill: #f3f7ff; font-size: 11px; font-weight: 700; text-anchor: middle; }
+.node-sub { fill: #b1c1d9; font-size: 8px; text-anchor: middle; }
+.map-caption {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    padding: 11px 13px; color: #c0cde1; font-size: 11px;
+    border-top: 1px solid rgba(143,169,208,.22);
+}
+.map-caption strong { color: #ffffff; font-weight: 700; }
+.map-placeholder { color: var(--muted); font-size: 13px; text-align: center; padding: 25px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.field { display: grid; gap: 7px; }
+.field.full { grid-column: 1 / -1; }
+label { color: #43536f; font-size: 12px; font-weight: 750; }
+input, select {
+    width: 100%; min-width: 0; color: #1c2b49; background: #fbfcff;
+    border: 1px solid #d6dfed; border-radius: 10px; padding: 11px 12px; outline: none;
+    transition: .15s ease;
+}
+input::placeholder { color: #9aa8bd; }
+input:focus, select:focus { border-color: #6378ef; box-shadow: 0 0 0 3px rgba(99,120,239,.13); background: white; }
+select option { background: white; color: #1c2b49; }
+.form-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 15px; }
+.helper { color: var(--muted); font-size: 11px; line-height: 1.45; }
+.form-footer .btn { min-width: 155px; }
+.queue-list, .fleet-list, .dispatch-list, .history-list { display: grid; gap: 10px; }
+.item {
+    border: 1px solid #e1e8f3; border-radius: 13px; padding: 13px;
+    background: linear-gradient(135deg, #ffffff, #f8faff);
+}
+.item-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.item-name { font-size: 13px; font-weight: 800; color: #20304e; }
+.item-meta { color: #687891; font-size: 11px; line-height: 1.6; margin-top: 6px; }
+.badge { padding: 5px 9px; border-radius: 999px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.sev-5 { color: #b92743; background: #ffe6eb; }
+.sev-4 { color: #bd5a1a; background: #fff0df; }
+.sev-3 { color: #9a6500; background: #fff5d9; }
+.sev-2, .sev-1 { color: #315bc4; background: #eaf0ff; }
+.status-available { color: #087b5b; background: #e2f7ee; }
+.status-busy { color: #a65b08; background: #fff0d9; }
+.empty { padding: 20px 12px; border: 1px dashed #cbd6e7; border-radius: 12px; color: var(--muted); background: #fafcff; text-align: center; font-size: 12px; }
+.item-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.route-text { color: #087f80; font-size: 11px; margin-top: 7px; line-height: 1.5; font-weight: 650; }
+.section-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 0 11px; }
+.section-row h3 { margin: 0; font-size: 13px; color: #263653; }
+.count { color: var(--muted); font-size: 11px; }
+.notice {
+    display: none; margin-bottom: 15px; padding: 11px 13px; border-radius: 11px;
+    font-size: 12px; line-height: 1.5; border: 1px solid transparent;
+}
+.notice.show { display: block; }
+.notice.success { color: #087b5b; background: #e7f8f0; border-color: #c5edda; }
+.notice.error { color: #b52c45; background: #fff0f2; border-color: #f5cbd2; }
+.notice.info { color: #315bc4; background: #edf2ff; border-color: #d4defe; }
+.footer { padding: 22px 4px 5px; color: #8390a5; text-align: center; font-size: 10px; }
+@media (max-width: 1050px) {
+    .stats { grid-template-columns: repeat(3,1fr); }
+    .layout { grid-template-columns: 1fr; }
+    .right-stack { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .right-stack .panel:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 650px) {
+    .app { padding: 16px 12px; }
+    .topbar { align-items: flex-start; }
+    .top-actions { flex-direction: column; align-items: flex-end; }
+    .stats { grid-template-columns: repeat(2,1fr); gap: 9px; }
+    .stat { padding: 13px; min-height: 100px; }
+    .stat-value { font-size: 25px; }
+    .right-stack { grid-template-columns: 1fr; }
+    .right-stack .panel:last-child { grid-column: auto; }
+    .form-grid { grid-template-columns: 1fr; }
+    .field.full { grid-column: auto; }
+    .form-footer { align-items: stretch; flex-direction: column; }
+    .form-footer .btn { width: 100%; }
+    .map-wrap, #cityMap { min-height: 300px; }
+    .panel { padding: 15px; }
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark">✚</div>
+            <div>
+                <h1>Emergency Dispatch</h1>
+                <div class="subtitle">Ambulance allocation and route simulation · Chandigarh network</div>
+            </div>
+        </div>
+        <div class="top-actions">
+            <div class="live-pill"><span class="live-dot"></span> SIMULATION ONLINE</div>
+            <button class="btn btn-danger" id="resetBtn" type="button">Reset simulation</button>
+        </div>
+    </header>
+
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+
+    <section class="stats">
+        <div class="stat">
+            <div class="stat-top"><span>Available ambulances</span><span class="stat-icon">＋</span></div>
+            <div class="stat-value" id="availableCount">—</div>
+            <div class="stat-note">Ready for allocation</div>
+        </div>
+        <div class="stat">
+            <div class="stat-top"><span>Busy ambulances</span><span class="stat-icon">🚑</span></div>
+            <div class="stat-value" id="busyCount">—</div>
+            <div class="stat-note">Currently dispatched</div>
+        </div>
+        <div class="stat">
+            <div class="stat-top"><span>Pending emergencies</span><span class="stat-icon">!</span></div>
+            <div class="stat-value" id="pendingCount">—</div>
+            <div class="stat-note">Waiting for dispatch</div>
+        </div>
+        <div class="stat">
+            <div class="stat-top"><span>Active dispatches</span><span class="stat-icon">➤</span></div>
+            <div class="stat-value" id="activeCount">—</div>
+            <div class="stat-note">Ambulances on assignment</div>
+        </div>
+        <div class="stat">
+            <div class="stat-top"><span>Completed cases</span><span class="stat-icon">✓</span></div>
+            <div class="stat-value" id="completedCount">—</div>
+            <div class="stat-note">Completed in this session</div>
+        </div>
+    </section>
+
+    <main class="layout">
+        <div class="left-stack">
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2 class="panel-title">City road network</h2>
+                        <p class="panel-description">Predefined simulated sector graph. Highlighted cyan roads show the selected dispatch route.</p>
+                    </div>
+                    <div class="legend">
+                        <span><i style="background:#82a0c5"></i>Sector</span>
+                        <span><i style="background:#55d6d0"></i>Route</span>
+                    </div>
+                </div>
+                <div class="map-wrap">
+                    <svg id="cityMap" viewBox="0 0 760 430" role="img" aria-label="Schematic Chandigarh sector road network">
+                        <g id="roadLayer"></g>
+                        <g id="nodeLayer"></g>
+                    </svg>
+                    <div class="map-caption">
+                        <span><strong>12 sectors</strong> · Weighted undirected graph</span>
+                        <span id="mapRouteCaption">No route selected</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2 class="panel-title">Register emergency</h2>
+                        <p class="panel-description">Create a simulated emergency request for the dispatch engine.</p>
+                    </div>
+                    <span class="badge sev-5">NEW REQUEST</span>
+                </div>
+                <form id="emergencyForm">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="emergencyId">Emergency ID</label>
+                            <input id="emergencyId" name="id" type="number" min="1" step="1" placeholder="e.g. 1001" required>
+                        </div>
+                        <div class="field">
+                            <label for="patientName">Patient name</label>
+                            <input id="patientName" name="patientName" type="text" maxlength="100" placeholder="Enter patient name" required>
+                        </div>
+                        <div class="field">
+                            <label for="emergencyType">Emergency type</label>
+                            <select id="emergencyType" name="type" required>
+                                <option value="">Select emergency type</option>
+                                <option>Road accident</option>
+                                <option>Cardiac emergency</option>
+                                <option>Breathing difficulty</option>
+                                <option>Stroke symptoms</option>
+                                <option>Severe injury</option>
+                                <option>Medical emergency</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="severity">Severity level</label>
+                            <select id="severity" name="severity" required>
+                                <option value="5">5 — Critical</option>
+                                <option value="4">4 — Very high</option>
+                                <option value="3" selected>3 — Serious</option>
+                                <option value="2">2 — Moderate</option>
+                                <option value="1">1 — Low</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="pickup">Pickup sector</label>
+                            <select id="pickup" name="pickup" required></select>
+                        </div>
+                        <div class="field">
+                            <label for="hospital">Destination hospital sector</label>
+                            <select id="hospital" name="hospital" required></select>
+                        </div>
+                    </div>
+                    <div class="form-footer">
+                        <div class="helper">Priority order: severity first, nearest available ambulance distance second, and earlier request first when tied.</div>
+                        <button class="btn btn-primary" type="submit" id="registerBtn">＋ Register emergency</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+
+        <div class="right-stack">
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2 class="panel-title">Emergency priority queue</h2>
+                        <p class="panel-description">Highest-priority request appears first.</p>
+                    </div>
+                    <button class="btn btn-success btn-small" id="dispatchBtn" type="button">Dispatch next →</button>
+                </div>
+                <div id="pendingList" class="queue-list"><div class="empty">Loading pending emergencies…</div></div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2 class="panel-title">Ambulance fleet</h2>
+                        <p class="panel-description">Availability and current base sector.</p>
+                    </div>
+                    <span class="count" id="fleetCount">— units</span>
+                </div>
+                <div id="fleetList" class="fleet-list"><div class="empty">Loading fleet…</div></div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2 class="panel-title">Active dispatches</h2>
+                        <p class="panel-description">Complete a case to return its ambulance to service.</p>
+                    </div>
+                    <span class="count" id="activeLabel">0 active</span>
+                </div>
+                <div id="activeList" class="dispatch-list"><div class="empty">No active dispatches.</div></div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2 class="panel-title">Completed history</h2>
+                        <p class="panel-description">Cases completed during this simulation.</p>
+                    </div>
+                    <span class="count" id="historyLabel">0 records</span>
+                </div>
+                <div id="historyList" class="history-list"><div class="empty">No completed emergencies yet.</div></div>
+            </section>
+        </div>
+    </main>
+    <footer class="footer">Academic ADSA simulation · Uses a predefined sample road graph and simulated ambulance fleet · Not for real emergency response</footer>
+</div>
+
+<script>
+const API = {
+    state: "/api/state",
+    emergencies: "/api/emergencies",
+    dispatch: "/api/dispatch",
+    complete: "/api/complete",
+    reset: "/api/reset"
+};
+
+const positions = {
+    "Sector 15": [115, 155],
+    "Sector 17": [270, 125],
+    "Sector 22": [425, 160],
+    "Sector 34": [565, 245],
+    "Sector 35": [665, 330],
+    "Sector 43": [520, 370],
+    "Sector 8": [90, 315],
+    "Sector 9": [205, 355],
+    "Sector 11": [310, 300],
+    "Sector 12": [405, 385],
+    "Sector 16": [435, 235],
+    "Sector 23": [510, 185]
+};
+
+let latestState = null;
+let selectedRoute = [];
+let polling = false;
+
+const $ = (id) => document.getElementById(id);
+
+function showNotice(message, type = "info") {
+    const notice = $("notice");
+    notice.textContent = message;
+    notice.className = `notice show ${type}`;
+    window.clearTimeout(showNotice.timer);
+    showNotice.timer = window.setTimeout(() => {
+        notice.className = "notice";
+    }, 5000);
+}
+
+async function request(url, options = {}) {
+    const response = await fetch(url, options);
+    let data;
+    try {
+        data = await response.json();
+    } catch {
+        throw new Error(`Server returned an invalid response (${response.status}).`);
+    }
+    if (!response.ok) {
+        throw new Error(data.error || `Request failed (${response.status}).`);
+    }
+    return data;
+}
+
+function postForm(url, values = {}) {
+    const body = new URLSearchParams();
+    Object.entries(values).forEach(([key, value]) => body.append(key, value));
+    return request(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+    });
+}
+
+function fillSectorOptions(nodes) {
+    const pickup = $("pickup");
+    const hospital = $("hospital");
+    const oldPickup = pickup.value;
+    const oldHospital = hospital.value;
+    pickup.innerHTML = "";
+    hospital.innerHTML = "";
+    nodes.forEach((node) => {
+        const option1 = document.createElement("option");
+        option1.value = node;
+        option1.textContent = node;
+        pickup.appendChild(option1);
+
+        const option2 = document.createElement("option");
+        option2.value = node;
+        option2.textContent = node;
+        hospital.appendChild(option2);
+    });
+    if (nodes.includes(oldPickup)) pickup.value = oldPickup;
+    if (nodes.includes(oldHospital)) hospital.value = oldHospital;
+    if (!oldPickup && nodes.includes("Sector 15")) pickup.value = "Sector 15";
+    if (!oldHospital && nodes.includes("Sector 17")) hospital.value = "Sector 17";
+}
+
+function severityLabel(value) {
+    const labels = { 5: "CRITICAL", 4: "VERY HIGH", 3: "SERIOUS", 2: "MODERATE", 1: "LOW" };
+    return labels[value] || "UNKNOWN";
+}
+
+function safeText(value) {
+    return String(value ?? "");
+}
+
+function renderMap(state) {
+    const roadLayer = $("roadLayer");
+    const nodeLayer = $("nodeLayer");
+    roadLayer.replaceChildren();
+    nodeLayer.replaceChildren();
+
+    const routeEdges = new Set();
+    for (let i = 1; i < selectedRoute.length; i++) {
+        const a = selectedRoute[i - 1];
+        const b = selectedRoute[i];
+        routeEdges.add([a, b].sort().join("|"));
+    }
+
+    (state.roads || []).forEach((road) => {
+        const p1 = positions[road.from];
+        const p2 = positions[road.to];
+        if (!p1 || !p2) return;
+
+        const key = [road.from, road.to].sort().join("|");
+        const isRoute = routeEdges.has(key);
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", p1[0]);
+        line.setAttribute("y1", p1[1]);
+        line.setAttribute("x2", p2[0]);
+        line.setAttribute("y2", p2[1]);
+        line.setAttribute("class", isRoute ? "road route" : "road");
+        roadLayer.appendChild(line);
+
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", (p1[0] + p2[0]) / 2);
+        label.setAttribute("y", (p1[1] + p2[1]) / 2 - 7);
+        label.setAttribute("class", "road-label");
+        label.textContent = `${road.distance} km`;
+        roadLayer.appendChild(label);
+    });
+
+    (state.nodes || []).forEach((name) => {
+        const p = positions[name];
+        if (!p) return;
+
+        const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", p[0]);
+        circle.setAttribute("cy", p[1]);
+        circle.setAttribute("r", 9);
+        circle.setAttribute("class", "node");
+        group.appendChild(circle);
+
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", p[0]);
+        label.setAttribute("y", p[1] + 25);
+        label.setAttribute("class", "node-label");
+        label.textContent = name.replace("Sector ", "SEC ");
+        group.appendChild(label);
+        nodeLayer.appendChild(group);
+    });
+
+    $("mapRouteCaption").textContent = selectedRoute.length
+        ? `Selected route: ${selectedRoute.join(" → ")}`
+        : "No route selected";
+}
+
+function renderStats(stats) {
+    $("availableCount").textContent = stats.availableAmbulances ?? 0;
+    $("busyCount").textContent = stats.busyAmbulances ?? 0;
+    $("pendingCount").textContent = stats.pendingEmergencies ?? 0;
+    $("activeCount").textContent = stats.activeEmergencies ?? 0;
+    $("completedCount").textContent = stats.completedEmergencies ?? 0;
+}
+
+function renderPending(items) {
+    const container = $("pendingList");
+    container.replaceChildren();
+
+    if (!items.length) {
+        container.innerHTML = '<div class="empty">No pending emergencies. Register a request to begin.</div>';
+        return;
+    }
+
+    items.forEach((item, index) => {
+        const card = document.createElement("div");
+        card.className = "item";
+
+        const top = document.createElement("div");
+        top.className = "item-top";
+
+        const name = document.createElement("div");
+        name.className = "item-name";
+        name.textContent = `#${item.id} · ${item.patientName}`;
+
+        const badge = document.createElement("span");
+        badge.className = `badge sev-${item.severity}`;
+        badge.textContent = severityLabel(item.severity);
+
+        top.append(name, badge);
+
+        const meta = document.createElement("div");
+        meta.className = "item-meta";
+        const distance = item.distance >= 2147483647 ? "No ambulance currently available" : `${item.distance} km to nearest available ambulance`;
+        meta.textContent = `${item.type} · ${item.pickup} → ${item.hospital} · ${distance}`;
+
+        const rank = document.createElement("div");
+        rank.className = "route-text";
+        rank.textContent = index === 0 ? "NEXT IN DISPATCH ORDER" : `QUEUE POSITION ${index + 1}`;
+
+        card.append(top, meta, rank);
+        container.appendChild(card);
+    });
+}
+
+function renderFleet(items) {
+    const container = $("fleetList");
+    container.replaceChildren();
+    $("fleetCount").textContent = `${items.length} units`;
+
+    if (!items.length) {
+        container.innerHTML = '<div class="empty">No ambulances configured.</div>';
+        return;
+    }
+
+    items.forEach((ambulance) => {
+        const card = document.createElement("div");
+        card.className = "item";
+
+        const top = document.createElement("div");
+        top.className = "item-top";
+
+        const name = document.createElement("div");
+        name.className = "item-name";
+        name.textContent = `AMB-${ambulance.id}`;
+
+        const badge = document.createElement("span");
+        badge.className = `badge ${ambulance.available ? "status-available" : "status-busy"}`;
+        badge.textContent = ambulance.available ? "AVAILABLE" : "BUSY";
+
+        top.append(name, badge);
+
+        const meta = document.createElement("div");
+        meta.className = "item-meta";
+        meta.textContent = `Current sector: ${ambulance.location}`;
+
+        card.append(top, meta);
+        container.appendChild(card);
+    });
+}
+
+function renderActive(items) {
+    const container = $("activeList");
+    container.replaceChildren();
+    $("activeLabel").textContent = `${items.length} active`;
+
+    if (!items.length) {
+        container.innerHTML = '<div class="empty">No active dispatches.</div>';
+        return;
+    }
+
+    items.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "item";
+
+        const top = document.createElement("div");
+        top.className = "item-top";
+
+        const name = document.createElement("div");
+        name.className = "item-name";
+        name.textContent = `Emergency #${item.id}`;
+
+        const badge = document.createElement("span");
+        badge.className = "badge status-busy";
+        badge.textContent = `AMB-${item.ambulanceId}`;
+
+        top.append(name, badge);
+
+        const meta = document.createElement("div");
+        meta.className = "item-meta";
+        meta.textContent = `${item.patientName} · ${item.type} · Severity ${item.severity} · ${item.routeDistance} km`;
+
+        const route = document.createElement("div");
+        route.className = "route-text";
+        route.textContent = `Ambulance → pickup: ${(item.route || []).join(" → ")} (${item.routeDistance} km)\nPickup → hospital: ${(item.hospitalRoute || []).join(" → ")} (${item.hospitalDistance} km)`;
+
+        const actions = document.createElement("div");
+        actions.className = "item-actions";
+
+        const complete = document.createElement("button");
+        complete.type = "button";
+        complete.className = "btn btn-success btn-small";
+        complete.textContent = "Mark completed";
+        complete.addEventListener("click", () => completeDispatch(item.ambulanceId));
+
+        const showRoute = document.createElement("button");
+        showRoute.type = "button";
+        showRoute.className = "btn btn-small";
+        showRoute.textContent = "Show ambulance → pickup";
+        showRoute.addEventListener("click", () => {
+            selectedRoute = item.route || [];
+            if (latestState) renderMap(latestState);
+        });
+
+        const showHospitalRoute = document.createElement("button");
+        showHospitalRoute.type = "button";
+        showHospitalRoute.className = "btn btn-small";
+        showHospitalRoute.textContent = "Show pickup → hospital";
+        showHospitalRoute.addEventListener("click", () => {
+            selectedRoute = item.hospitalRoute || [];
+            if (latestState) renderMap(latestState);
+        });
+
+        actions.append(showRoute, showHospitalRoute, complete);
+        card.append(top, meta, route, actions);
+        container.appendChild(card);
+    });
+}
+
+function renderHistory(items) {
+    const container = $("historyList");
+    container.replaceChildren();
+    $("historyLabel").textContent = `${items.length} records`;
+
+    if (!items.length) {
+        container.innerHTML = '<div class="empty">No completed emergencies yet.</div>';
+        return;
+    }
+
+    items.slice().reverse().slice(0, 5).forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "item";
+
+        const top = document.createElement("div");
+        top.className = "item-top";
+
+        const name = document.createElement("div");
+        name.className = "item-name";
+        name.textContent = `#${item.id} · ${item.patientName}`;
+
+        const badge = document.createElement("span");
+        badge.className = "badge status-available";
+        badge.textContent = "COMPLETED";
+
+        top.append(name, badge);
+
+        const meta = document.createElement("div");
+        meta.className = "item-meta";
+        meta.textContent = `${item.type} · ${item.pickup} → ${item.hospital}`;
+
+        card.append(top, meta);
+        container.appendChild(card);
+    });
+}
+
+function render(state) {
+    latestState = state;
+    renderStats(state.stats || {});
+    renderPending(state.pending || []);
+    renderFleet(state.ambulances || []);
+    renderActive(state.active || []);
+    renderHistory(state.completed || []);
+    renderMap(state);
+}
+
+async function refreshState() {
+    if (polling) return;
+    polling = true;
+    try {
+        const state = await request(API.state);
+        if (!latestState) fillSectorOptions(state.nodes || []);
+        render(state);
+    } catch (error) {
+        showNotice(`Cannot connect to backend: ${error.message}. Start the C++ server and refresh.`, "error");
+    } finally {
+        polling = false;
+    }
+}
+
+async function completeDispatch(ambulanceId) {
+    try {
+        const result = await postForm(API.complete, { ambulanceId });
+        showNotice(result.message || "Emergency marked completed.", "success");
+        await refreshState();
+    } catch (error) {
+        showNotice(error.message, "error");
+    }
+}
+
+$("emergencyForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = $("registerBtn");
+    button.disabled = true;
+
+    const values = {
+        id: $("emergencyId").value.trim(),
+        patientName: $("patientName").value.trim(),
+        type: $("emergencyType").value,
+        severity: $("severity").value,
+        pickup: $("pickup").value,
+        hospital: $("hospital").value
+    };
+
+    try {
+        const result = await postForm(API.emergencies, values);
+        showNotice(result.message || "Emergency registered.", "success");
+        $("emergencyForm").reset();
+        $("severity").value = "3";
+        await refreshState();
+    } catch (error) {
+        showNotice(error.message, "error");
+    } finally {
+        button.disabled = false;
+    }
+});
+
+$("dispatchBtn").addEventListener("click", async () => {
+    const button = $("dispatchBtn");
+    button.disabled = true;
+
+    try {
+        const result = await postForm(API.dispatch);
+        selectedRoute = result.route || [];
+        showNotice(`Emergency #${result.emergencyId} assigned to AMB-${result.ambulanceId}. Route distance: ${result.distance} km.`, "success");
+        await refreshState();
+    } catch (error) {
+        showNotice(error.message, "error");
+        await refreshState();
+    } finally {
+        button.disabled = false;
+    }
+});
+
+$("resetBtn").addEventListener("click", async () => {
+    const confirmed = window.confirm("Reset the simulation? This clears pending, active and completed emergencies and restores the ambulance fleet.");
+    if (!confirmed) return;
+
+    try {
+        const result = await postForm(API.reset);
+        selectedRoute = [];
+        showNotice(result.message || "Simulation reset.", "success");
+        await refreshState();
+    } catch (error) {
+        showNotice(error.message, "error");
+    }
+});
+
+refreshState();
+window.setInterval(refreshState, 3000);
+</script>
+</body>
+</html>
